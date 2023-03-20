@@ -6,7 +6,14 @@ This repository contains the code for the [MICCAI 2023](https://conferences.micc
 <img src="https://github.com/matteo-tafuro/temporally-consistent-echosegmentation/blob/main/images/method-diagram.png?raw=true" width=70%>
 </p>
 
+# Table of contents
+- [Getting started](#nnu-net)
+    - [Environment and requirements](#environment-and-requirements)
+    - [Data preparation](#data-preparation)
+- 
+
 # Getting started
+
 ## Environment and requirements
 1. To install the required packages, create a new conda environment using the provided YAML file:
 
@@ -79,3 +86,46 @@ The CAMUS dataset is converted to an HDF5 file for fast I/O. This significantly 
 cd data/camus/
 python camus_hdf5_conversion.py
 ```
+
+# Psuedo-labels generation
+To obtain accurate and temporally consistent 3D (2D+time) segmentations from a sparsely labeled dataset, the method first generates the pseudo-labels for those frames that lack reference segmentations. This is done through the iterative application of image registration. Thereafter, the method uses these pseudo-labels to augment sparse reference annotations and train a segmentation model.
+
+## Image registration model
+### Training
+To train the image registration model, navigate to the `pseudolabels_generation/` directory and run the `train_IR_model.py` script:
+```bash
+cd pseudolabels_generation/
+python train_IR_model.py
+```
+The script trains a DIRNet for 10,000 epochs, using 32 kernels of size 32×32, a grid spacing of 32 and a regularization hyperparameter value of 1.0 for the bending energy penalty to prevent folding. If you want to experiment with the settings, use `python train_IR_model.py -h` for more information.
+
+Additionally, by default, the script leaves out 25 patients from the training set to run validation. If you want to exclude the TED patients to aid the downstream  evaluation of the pseudo-labels generation, please run `python train_IR_model.py --leave_out_patients -1`.
+
+### Pre-trained models
+/TODO
+
+### Evaluation
+The evaluate the image registration results, a qualitative evaluation is conducted on six randomly-chosen patients. One sequence is selected for each view (2CH, 4CH) and each image quality (Poor, Medium, Good). By default, the training script evaluates the following patients at the end of the training procedure:
+
+<center>
+
+| Patient | View | Quality |
+| ------- | ---- | ------- |
+| 271     | 2CH  | Poor    |
+| 437     | 2CH  | Medium  |
+| 178     | 2CH  | Good    |
+| 13      | 4CH  | Poor    |
+| 82      | 4CH  | Medium  |
+| 359     | 4CH  | Good    |
+
+</center>
+
+For each of these patients, four outputs are generated:
+- *Animation of the propagation*, to assess the propagation of the given masks over time;
+- *Comparison between the GT and the last propagated mask*, together with a measure of overlap (DICE score);
+- *Average warped image*, along with the absolute difference from the ground truth. The less blurry the average warped image is, the better the registration.
+- *Boxplot of the Jacobian Determinant*, to gauge the presence of folding.
+
+## Labels propagation
+### Inference
+### Evaluation
