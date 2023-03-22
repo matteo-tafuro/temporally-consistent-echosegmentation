@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     ted_only = False
     if ted_only:
-        ted2camus = pd.read_csv('/home/matteo/supervision_by_registration/datasets/camus/ted2camus.csv')
+        ted2camus = pd.read_csv('../../../data/ted2camus.csv')
         patients_of_interest = ted2camus['camus_id'].tolist()
 
     is_2d_or_3d = '2d'

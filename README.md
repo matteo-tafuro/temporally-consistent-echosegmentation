@@ -3,7 +3,7 @@
 This repository contains the code for the [MICCAI 2023](https://conferences.miccai.org/2023/en/) submission _"Temporally consistent segmentations from sparsely labeled echocardiograms using image registration for pseudo-label generation"_. 
 
 <p align="center">
-<img src="https://github.com/matteo-tafuro/temporally-consistent-echosegmentation/blob/main/images/method-diagram.png?raw=true" width=70%>
+<img src="https://i.ibb.co/cFSL0r6/method-diagram-png.png" width=70%>
 </p>
 
 # Table of contents
@@ -102,12 +102,12 @@ The script trains a DIRNet for 10,000 epochs, using 32 kernels of size 32×32, a
 Additionally, by default, the script leaves out 25 patients from the training set to run validation. If you want to exclude the TED patients to aid the downstream  evaluation of the pseudo-labels generation, please run `python train_IR_model.py --leave_out_patients -1`.
 
 ### Pre-trained models
-/TODO
+The weights of the pre-trained models are publicly available [here](https://mega.nz/folder/vQNRHKyL#NdjVjpTxSKaWZA7Sv_I07w). Please download the `LitDIRNet` folder and place it in `pseudolabels_generation/TorchIR/output`.
 
 ### Evaluation
 The evaluate the image registration results, a qualitative evaluation is conducted on six randomly-chosen patients. One sequence is selected for each view (2CH, 4CH) and each image quality (Poor, Medium, Good). By default, the training script evaluates the following patients at the end of the training procedure:
 
-<center>
+<p align="center">
 
 | Patient | View | Quality |
 | ------- | ---- | ------- |
@@ -118,7 +118,7 @@ The evaluate the image registration results, a qualitative evaluation is conduct
 | 82      | 4CH  | Medium  |
 | 359     | 4CH  | Good    |
 
-</center>
+</p>
 
 For each of these patients, four outputs are generated:
 - *Animation of the propagation*, to assess the propagation of the given masks over time;
@@ -127,5 +127,11 @@ For each of these patients, four outputs are generated:
 - *Boxplot of the Jacobian Determinant*, to gauge the presence of folding.
 
 ## Labels propagation
+The trained DIR model is used to propagate the masks over time.
 ### Inference
+Run the `propagate_mask.py` script in `pseudolabels_generation/`. Change the model path before running it, then simply do:
+```bash
+python propagate_mask.py
+```
+By default, the script generates the pseudo-labels for _all_ patients in the training set. Feel free to experiment using the provided code.
 ### Evaluation

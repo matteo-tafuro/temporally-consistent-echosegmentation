@@ -3,20 +3,17 @@ import numpy as np
 import pandas as pd
 import torch
 import cv2
-import sys
 import os
 import h5py
-import tqdm
-import gc
+from tqdm import tqdm
 import SimpleITK as sitk
 
-sys.path.insert(1, '..')
 from TorchIR.utils.utils import load_model
 from TorchIR.utils.eval import batch_compute_jacobian
 from TorchIR.utils.utils import get_frames_masks
 
 
-def generate_inbetween_frames(data_dir, hdf5_filepath, models_dir, output_dir = None, direction='bidirectional', method='fixed', interested_patients=None, device='cuda'):
+def generate_inbetween_frames(data_dir, hdf5_filepath, model_dir, output_dir = None, direction='bidirectional', method='sequential', interested_patients=None, device='cuda'):
     """	
     Generate inbetween frames for each patient using the models in models_dir. The inbetween frames are generated using the approach specified
     by the `direction` argument. If `output_dir` is None, the masks will be saved with the original data. Otherwise, the masks will be saved
@@ -24,12 +21,14 @@ def generate_inbetween_frames(data_dir, hdf5_filepath, models_dir, output_dir = 
     ID and a view, e.g. [(1, '2CH'), (14, '4CH')]. If given, the inbetween masks will only be generated for those patients.
     The HDF5 is used to speed up the loading of the data.
     args:
-        data_dir: path to the directory containing the patients' training data
-        hdf5_filepath: path to the HDF5 file containing the training set
-        models_dir: path to the directory containing the models
-        output_dir: path to the directory where the masks will be saved. If None, the masks will be saved with the original data.
-        direction: 'bidirectional', 'forward' or 'backward'
-        interested_patients: list of integers. If given, the inbetween masks will only be generated for those patients.
+        data_dir (str): path to the directory containing the data
+        hdf5_filepath (str): path to the HDF5 file containing the data
+        model_dir (str): path to the directory containing the model
+        output_dir (str): path to the directory where the masks will be saved. If None, the masks will be saved with the original data.
+        direction (str): 'bidirectional', 'forward' or 'backward'
+        method (str): Method to use for propagation. Can be either 'sequential' or 'fixed'.
+        interested_patients (list): list of tuples. If given, the inbetween masks will only be generated for those patients.
+        device (str): 'cuda' or 'cpu'
     """
 
     assert direction in ['bidirectional', 'forward', 'backward'], "Direction must be 'bidirectional', 'forward' or 'backward'."
@@ -38,9 +37,9 @@ def generate_inbetween_frames(data_dir, hdf5_filepath, models_dir, output_dir = 
     if output_dir is not None:
         os.makedirs(output_dir, exist_ok=True)
 
-    # Load models
-    model_paths = os.listdir(models_dir)[:50]
-    models = [load_model(os.path.join(models_dir, model_path), mode='eval', device=device, verbose=False, map_location='cpu') for model_path in tqdm(model_paths, desc='Loading models...', leave=False)]
+    # Load model
+    model = load_model(model_dir, mode='eval', device=device, verbose=False, map_location='cpu')
+    model = model.to(device)
 
     # Initialize HDF5 file
     with h5py.File(hdf5_filepath, 'r') as hdf5_file:
@@ -78,23 +77,20 @@ def generate_inbetween_frames(data_dir, hdf5_filepath, models_dir, output_dir = 
                     frames, mask_first, mask_last = get_frames_masks(patient, view, hdf5_file)
 
                     # Initialize masks container
-                    ref_masks = np.zeros((len(models), *frames.shape))
+                    ref_masks = np.zeros(frames.shape)
 
                     # Generate inbetween frames ============================================================================================================
-                    for i, model in enumerate(models):
-                        model.to(device)
-                        if direction=='forward':
-                            ref_masks[i] = propagate_masks_unidirectional(frames, mask_first, model=model, method=method, device=device, verbose=False)
-                        elif direction=='backward':
-                            # invert the direction of the frames
-                            ref_masks_inverted = propagate_masks_unidirectional(np.flip(frames[:], axis=0).copy(), mask_last, method=method, model=model, device=device, verbose=False)
-                            # re-invert the direction of the masks
-                            ref_masks[i] = np.flip(ref_masks_inverted, axis=0)
-                        elif direction=='bidirectional':
-                            ref_masks[i] = propagate_masks_bidirectional(frames, mask_first, mask_last, model=model, method=method, device=device, verbose=False)
-                        model.to('cpu')
-                        gc.collect()
-                        torch.cuda.empty_cache()
+                    if direction=='forward':
+                        ref_masks = propagate_masks_unidirectional(frames, mask_first, model=model, method=method, device=device, verbose=False)
+                    elif direction=='backward':
+                        # invert the direction of the frames
+                        ref_masks_inverted = propagate_masks_unidirectional(np.flip(frames[:], axis=0).copy(), mask_last, method=method, model=model, device=device, verbose=False)
+                        # re-invert the direction of the masks
+                        ref_masks = np.flip(ref_masks_inverted, axis=0)
+                    elif direction=='bidirectional':
+                        ref_masks = propagate_masks_bidirectional(frames, mask_first, mask_last, model=model, method=method, device=device, verbose=False)
+                    # Add leading dimension to ref_masks
+                    ref_masks = np.expand_dims(ref_masks, axis=0)
 
                     avg_masks_0 = np.mean(ref_masks == 0, axis=0)
                     avg_masks_1 = np.mean(ref_masks == 1, axis=0)
@@ -373,18 +369,20 @@ def propagate_masks(frames, mask, model_path = None, model = None, verbose = Tru
 
 if __name__ == '__main__':
     
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:3' if torch.cuda.is_available() else 'cpu')
 
-    data_dir = '/home/mtarufo/thesis/supervision_by_registration/datasets/camus/training'
-    hdf5_filepath = '/home/mtarufo/thesis/supervision_by_registration/TorchIR/data/camus/camus_training.hdf5'
-    models_dir = '/home/mtarufo/thesis/supervision_by_registration/TorchIR/output/uncertainty_maps_TrainCAMUS-TED/LitDIRNet'
+    method = 'sequential'
+    direction = 'bidirectional'
+    only_generated_TED = False
+    
+    data_dir = '../data/camus/training'
+    hdf5_filepath = '../data/camus/camus_training.hdf5'
+    model_dir = 'TorchIR/output/LitDIRNet/leave_out_TED'
 
-    # Let's only generate the inbetween frames for the patients in the TED set
-    ted2camus_df = pd.read_csv('/home/mtarufo/thesis/supervision_by_registration/TorchIR/data/camus/ted2camus.csv')
-    interested_patients = [(ID, '4CH') for ID in ted2camus_df['camus_id']]
+    # Let's only generate the inbetween frames for the patients in the TED set, if specified so
+    if only_generated_TED:
+        ted2camus_df = pd.read_csv('../data/ted2camus.csv')
+        interested_patients = [(ID, '4CH') for ID in ted2camus_df['camus_id']]
 
-    method='fixed'
-    direction='bidirectional'
-
-    output_dir = f'/home/mtarufo/thesis/supervision_by_registration/datasets/camus/propagated_masks_{method}/{direction}'
-    generate_inbetween_frames(data_dir, hdf5_filepath, models_dir, direction=direction, output_dir = output_dir, interested_patients=interested_patients, method=method, device=device)
+    output_dir = f'../data/propagated_masks/{method}/{direction}'
+    generate_inbetween_frames(data_dir, hdf5_filepath, model_dir, direction=direction, output_dir = output_dir, interested_patients=interested_patients if only_generated_TED else None, method=method, device=device)

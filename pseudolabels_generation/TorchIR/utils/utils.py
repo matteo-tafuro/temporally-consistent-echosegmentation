@@ -1,7 +1,10 @@
 import os
 import torch
-from models import get_model
 import h5py
+import sys
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
+from models import get_model
 
 def load_model(model_path, mode='eval', device='cpu', verbose=True, map_location=None):
     """

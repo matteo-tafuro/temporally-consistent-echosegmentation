@@ -67,7 +67,7 @@ def generate_test_plots(model_path, hdf5_filepath, device='cpu', verbose=False):
     jacobian_std_boxplot(jac_std, out_path)
 
 
-def generate_test_plots_bidirectional(model_path, hdf5_filepath='/home/mtarufo/thesis/supervision_by_registration/load_datasets/camus/camus_training.hdf5', device='cpu', verbose=False):
+def generate_test_plots_bidirectional(model_path, hdf5_filepath='..data/camus/camus_training.hdf5', device='cpu', verbose=False):
 
     # Load model
     model = load_model(model_path, mode='eval', device=device, verbose=verbose)
