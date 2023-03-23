@@ -61,10 +61,10 @@ def generate_inbetween_frames(data_dir, hdf5_filepath, model_dir, output_dir = N
                     if interested_patients is not None:
                         if (patient_id, view) not in interested_patients:
                             continue
-                        # If the file already exists, skip it
-                        if os.path.exists(outpath):
-                            pbar.update(1)	
-                            continue
+                    # If the file already exists, skip it
+                    if os.path.exists(outpath):
+                        pbar.update(1)	
+                        continue
                     
                     # Store info about the image that we need later when exporting the masks
                     original_img_itk = sitk.ReadImage(os.path.join(root, file), sitk.sitkFloat64)
@@ -368,21 +368,23 @@ def propagate_masks(frames, mask, model_path = None, model = None, verbose = Tru
 
 
 if __name__ == '__main__':
-    
-    device = torch.device('cuda:3' if torch.cuda.is_available() else 'cpu')
 
-    method = 'sequential'
-    direction = 'bidirectional'
-    only_generated_TED = False
+    device='cuda' if torch.cuda.is_available() else 'cpu'
     
-    data_dir = '../data/camus/training'
-    hdf5_filepath = '../data/camus/camus_training.hdf5'
-    model_dir = 'TorchIR/output/LitDIRNet/leave_out_TED'
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--method', type=str, default='sequential', help='Propagation method. Can be either `sequential` or `fixed`.')
+    parser.add_argument('--direction', type=str, default='bidirectional', help='Propagation direction. Can be either `forward`, `backward` or `bidirectional`.')
+    parser.add_argument('--TED_only', action='store_true', help='If specified, only the inbetween frames for the patients in the TED set will be generated.')
+    parser.add_argument('--data_dir', type=str, default='../data/camus/training', help='Path to the directory containing the Camus training set.')
+    parser.add_argument('--hdf5_filepath', type=str, default='../data/camus/camus_training.hdf5', help='Path to the hdf5 file containing the Camus training set.')
+    parser.add_argument('--model_dir', type=str, default='TorchIR/output/LitDIRNet/leave_out_TED', help='Path to the directory containing the trained model.')
+    args = parser.parse_args()
 
     # Let's only generate the inbetween frames for the patients in the TED set, if specified so
-    if only_generated_TED:
+    if args.TED_only:
         ted2camus_df = pd.read_csv('../data/ted2camus.csv')
         interested_patients = [(ID, '4CH') for ID in ted2camus_df['camus_id']]
 
-    output_dir = f'../data/propagated_masks/{method}/{direction}'
-    generate_inbetween_frames(data_dir, hdf5_filepath, model_dir, direction=direction, output_dir = output_dir, interested_patients=interested_patients if only_generated_TED else None, method=method, device=device)
+    output_dir = f'../data/propagated_masks/{args.method}/{args.direction}'
+    generate_inbetween_frames(args.data_dir, args.hdf5_filepath, args.model_dir, direction=args.direction, output_dir = output_dir, interested_patients=interested_patients if args.TED_only else None, method=args.method, device=device)
