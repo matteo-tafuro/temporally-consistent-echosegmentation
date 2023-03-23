@@ -156,17 +156,3 @@ if __name__ == '__main__':
     generate_dataset_json(os.path.join(target_base, 'dataset.json'), target_imagesTr, target_imagesTs, ('Ultrasound',),
                           labels={0: 'background', 1: 'LV_endo', 2: 'LV_epi', 3: 'LA'}, dataset_name=task_name, license='hands off!')
 
-    """
-    once this is completed, you can use the dataset like any other nnU-Net dataset. Note that since this is a 2D
-    dataset there is no need to run preprocessing for 3D U-Nets. You should therefore run the 
-    `nnUNet_plan_and_preprocess` command like this:
-    > nnUNet_plan_and_preprocess -t 120 -pl3d None
-    once that is completed, you can run the trainings as follows:
-    > nnUNet_train 2d nnUNetTrainerV2 120 FOLD
-    (where fold is again 0, 1, 2, 3 and 4 - 5-fold cross validation)
-    there is no need to run nnUNet_find_best_configuration because there is only one model to choose from.
-    Note that without running nnUNet_find_best_configuration, nnU-Net will not have determined a postprocessing
-    for the whole cross-validation. Spoiler: it will determine not to run postprocessing anyways. If you are using
-    a different 2D dataset, you can make nnU-Net determine the postprocessing by using the
-    `nnUNet_determine_postprocessing` command
-    """
