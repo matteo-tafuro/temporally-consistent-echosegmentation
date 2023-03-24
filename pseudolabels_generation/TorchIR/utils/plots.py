@@ -2,7 +2,7 @@ import os
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from utils.eval import compute_dice
+from pseudolabels_generation.utils.eval import compute_dice
 from matplotlib.collections import LineCollection
 import numpy as np
 import torch

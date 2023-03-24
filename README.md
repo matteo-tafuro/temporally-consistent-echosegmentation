@@ -10,10 +10,6 @@ This repository contains the code for the [MICCAI 2023](https://conferences.micc
 
 # Table of contents
 
-<!-- TOC -->
-
-- [Temporally consistent segmentations from sparsely labeled echocardiograms using image registration for pseudo-label generation](#temporally-consistent-segmentations-from-sparsely-labeled-echocardiograms-using-image-registration-for-pseudo-label-generation)
-- [Table of contents](#table-of-contents)
 - [Getting started](#getting-started)
     - [Environment and requirements](#environment-and-requirements)
     - [Data preparation](#data-preparation)
@@ -30,19 +26,15 @@ This repository contains the code for the [MICCAI 2023](https://conferences.micc
 - [Segmentation](#segmentation)
     - [Training](#training)
         - [Framwork preparation](#framwork-preparation)
-            - [Environment variables](#environment-variables)
-            - [Data conversion](#data-conversion)
-        - [D Sparse nnU-Net](#d-sparse-nnu-net)
-        - [D Dense nnU-Net](#d-dense-nnu-net)
-        - [D Dense nnU-Net](#d-dense-nnu-net)
+        - [2D Sparse nnU-Net](#2d-sparse-nnu-net)
+        - [2D Dense nnU-Net](#2d-dense-nnu-net)
+        - [3D Dense nnU-Net](#3d-dense-nnu-net)
     - [Inference](#inference)
     - [Evaluation](#evaluation)
-        - [Segmentation results](#segmentation-results)
-        - [LV volume and EF estimation](#lv-volume-and-ef-estimation)
+        - [Segmentation results: geometric accuracy, LV volume and EF estimation](#segmentation-results-geometric-accuracy-lv-volume-and-ef-estimation)
         - [Temporal smoothness](#temporal-smoothness)
 - [Results](#results)
 
-<!-- /TOC -->
 
 # Getting started
 
@@ -231,7 +223,7 @@ the [Medical Segmentation Decthlon](http://medicaldecathlon.com/). A conversion 
     nnUNet_find_best_configuration -m 2d -t 571
     ```
 
-### 2D Dense nnU-Net
+### 3D Dense nnU-Net
 1. Before training, nnU-Net requires the _Experiment planning and preprocessing_ step. In your terminal, run:
     ```bash
     nnUNet_plan_and_preprocess -t 572 --verify_dataset_integrity
@@ -267,11 +259,15 @@ the [Medical Segmentation Decthlon](http://medicaldecathlon.com/). A conversion 
 ## Evaluation
 The predicted segmentations are intrinsically evaluated by overlap and boundary metric. Additionally, the segmentation models are evaluated extrinsically on the EF and LV volumes. To aggregate dataset-level statistics for these estimations, the correlation coefficient, bias and mean absolute error (MAE) are calculated between the reference and automatically obtained values. Finally, the temporal consistency of the automatic segmentation is assessed by tracking the area of a given class over time. The smoothness of a sequence is computed as the integral of the second derivative of the resulting curve, which will be denoted as area curve. To account for changes in the slope of the area curve and prevent the loss of information due to opposite bending, the second derivative is squared prior to integration.
 
-### Segmentation results
-
-### LV volume and EF estimation
+### Segmentation results: geometric accuracy, LV volume and EF estimation
+The evaluation of the segmentation results is evaluated on the ED and ES frames using the CAMUS submission platform. The raw nnU-Net outputs need to be converted into MHD files that can be correctly processed by the platform. Please use the `process_outputs.py` and upload the resulting MHD files on the submission website.
 
 ### Temporal smoothness
+The temporal smoothness is defined as the integral of the squared second derivative:
+$$
+\int_a^b \left(f''(x)\right)^2 dx
+$$. 
+To replicate Figure 3 and 4 of the paper, please run the `evaluate_smoothness.py` script in the `segmentation` directory.
 
 # Results
 The following figure shows the performance of the pseudo-label generation using the forward, backward and bidirectional approach. For comparison, pseudo-labels were also generated using a SoTA 2D nnU-Net trained on the original sparsely labeled CAMUS dataset (2D Sparse nnU-Net), to allow a comparison between our DIR-based pseudo-labels and the predictions of a segmentation model. The analysis of the pseudo-label quality revealed the benefits of bidirectional propagation:

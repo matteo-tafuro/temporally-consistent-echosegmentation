@@ -9,7 +9,7 @@ from tqdm import tqdm
 import SimpleITK as sitk
 
 from TorchIR.utils.utils import load_model
-from TorchIR.utils.eval import batch_compute_jacobian
+from utils.eval import batch_compute_jacobian
 from TorchIR.utils.utils import get_frames_masks
 
 
