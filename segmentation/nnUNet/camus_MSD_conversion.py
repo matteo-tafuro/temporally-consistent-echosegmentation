@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     ted_only = False
     if ted_only:
-        ted2camus = pd.read_csv('../../../data/ted2camus.csv')
+        ted2camus = pd.read_csv('../../data/ted2camus.csv')
         patients_of_interest = ted2camus['camus_id'].tolist()
 
     is_2d_or_3d = '2d'
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     assert not (test_both and not test_dense)
 
     # download data and unzip files, then set the following path according to your system:
-    base = '../../datasets/camus'
+    base = '../../data/camus'
 
     assert os.path.isdir(base), "Please set the path to the dataset in this script"
 

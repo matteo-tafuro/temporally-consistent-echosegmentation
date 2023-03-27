@@ -180,9 +180,9 @@ Three models are trained and compared: A 3D nnU-Net is trained on the augmented 
 First, the nnU-Net requires some environment variables to be set. Navigate to the `segmentation/` directory, then type the following in your terminal:
 
 ```bash
-export nnUNet_raw_data_base="/data/nnUNet_raw_data_base"
-export nnUNet_preprocessed="/data/nnUNet_preprocessed"
-export RESULTS_FOLDER="/trained_models"
+export nnUNet_raw_data_base="./data/nnUNet_raw_data_base"
+export nnUNet_preprocessed="./data/nnUNet_preprocessed"
+export RESULTS_FOLDER="./trained_models"
 ```
 
 #### Data conversion
