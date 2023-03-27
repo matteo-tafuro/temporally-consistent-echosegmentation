@@ -264,9 +264,11 @@ The evaluation of the segmentation results is evaluated on the ED and ES frames 
 
 ### Temporal smoothness
 The temporal smoothness is defined as the integral of the squared second derivative:
+
 $$
 \int_a^b \left(f''(x)\right)^2 dx
-$$. 
+$$ 
+
 To replicate Figure 3 and 4 of the paper, please run the `evaluate_smoothness.py` script in the `segmentation` directory.
 
 # Results
